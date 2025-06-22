@@ -1,0 +1,18 @@
+# version: '3.8'
+
+services:
+  spark:
+    build:
+      context: .
+      dockerfile: spark.dockerfile
+    container_name: spark
+    environment:
+      SPARK_MODE: master
+      HOME: "/tmp"
+      SPARK_SUBMIT_OPTIONS: "--conf spark.jars.ivy=/home/sparkuser/.ivy2.5.2 --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog --packages io.delta:delta-core_2.12:2.4.0"
+    ports:
+      - "4040:4040"
+      - "8080:8080"
+    volumes:
+      - .:/opt/project
+      - ~/spark_data:/data

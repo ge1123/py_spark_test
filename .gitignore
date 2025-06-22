@@ -1,0 +1,19 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# VS Code settings
+.vscode/
+
+# Spark temporary files
+ivy-cache/
+.derby/
+.metastore/
+
+# Data folders
+data/
+
+# OS files
+.DS_Store
+Thumbs.db
