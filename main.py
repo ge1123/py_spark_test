@@ -2,6 +2,7 @@
 from pyspark.sql import SparkSession
 from delta.pip_utils import configure_spark_with_delta_pip
 import service
+from etl_context import ETLContext  # ⬅️ 確保這一行有加
 
 def main():
     builder = SparkSession.builder \
@@ -11,8 +12,8 @@ def main():
 
     spark = configure_spark_with_delta_pip(builder).getOrCreate()
 
-    service.set_spark(spark)
-    service.run_etl()
+    service.run_etl(spark)
+
  
     spark.stop()
 

@@ -1,33 +1,30 @@
+# service.py
 from pyspark.sql import SparkSession
-from context import get_spark, get_env
 
-spark: SparkSession = None
-view_list = []
+# View 名稱常數（集中管理）
 VW_CUSTOMERS = "vw_customers"
 VW_ORDERS = "vw_orders"
 VW_CUSTOMER_ORDERS = "vw_customer_orders"
 VW_CUSTOMER_SUMMARY = "vw_customer_summary"
 
-def set_spark(spark_session: SparkSession):
-    global spark
-    spark = spark_session
+# === Bronze Layer ===
 
-# Bronze SQLs
-def get_customer_sql():
-    return f"""
-        SELECT id, name
-        FROM customers
-    """
+def load_customers(spark: SparkSession):
+    sql = "SELECT id, name FROM customers"
+    df = spark.sql(sql)
+    df.createOrReplaceTempView(VW_CUSTOMERS)
+    print(f"[Loaded: {VW_CUSTOMERS}]\n{sql}")
 
-def get_orders_sql():
-    return f"""
-        SELECT order_id, order_date, customer_id
-        FROM orders
-    """
+def load_orders(spark: SparkSession):
+    sql = "SELECT order_id, order_date, customer_id FROM orders"
+    df = spark.sql(sql)
+    df.createOrReplaceTempView(VW_ORDERS)
+    print(f"[Loaded: {VW_ORDERS}]\n{sql}")
 
-# Silver SQL
-def get_enriched_order_data_sql():
-    return f"""
+# === Silver Layer ===
+
+def transform_customer_orders(spark: SparkSession):
+    sql = f"""
         WITH tmp_joined_data AS (
             SELECT c.id AS customer_id, c.name, o.order_id, o.order_date
             FROM {VW_CUSTOMERS} c
@@ -35,48 +32,59 @@ def get_enriched_order_data_sql():
         ),
         tmp_enriched_data AS (
             SELECT *,
-                CAST(order_date AS DATE) AS order_date_cast,
-                YEAR(order_date) AS order_year
+                   CAST(order_date AS DATE) AS order_date_cast,
+                   YEAR(order_date) AS order_year
             FROM tmp_joined_data
         )
         SELECT * FROM tmp_enriched_data
     """
+    df = spark.sql(sql)
+    df.createOrReplaceTempView(VW_CUSTOMER_ORDERS)
+    print(f"[Transformed: {VW_CUSTOMER_ORDERS}]\n{sql}")
 
-# Gold SQL
-def get_customer_summary_sql():
-    return f"""
+# === Gold Layer ===
+
+def summarize_customers(spark: SparkSession):
+    sql = f"""
         SELECT customer_id, name, COUNT(order_id) AS order_count, MIN(order_date_cast) AS first_order
         FROM {VW_CUSTOMER_ORDERS}
         GROUP BY customer_id, name
     """
-
-def register_temp_view(sql_func, view_name: str):
-    sql = sql_func()
     df = spark.sql(sql)
-    df.createOrReplaceTempView(view_name)
-    view_list.append(view_name)
-    print(sql)
+    df.createOrReplaceTempView(VW_CUSTOMER_SUMMARY)
+    print(f"[Summarized: {VW_CUSTOMER_SUMMARY}]\n{sql}")
 
-def clear_temp_view():
-    for view in view_list:
+# === 清除所有 temp view ===
+
+def drop_temp_views(spark: SparkSession):
+    views_to_drop = [
+        VW_CUSTOMERS,
+        VW_ORDERS,
+        VW_CUSTOMER_ORDERS,
+        VW_CUSTOMER_SUMMARY
+    ]
+    for view in views_to_drop:
         if spark.catalog.tableExists(view):
             spark.catalog.dropTempView(view)
+            print(f"[View Dropped] {view}")
 
-def run_etl():
-    # Step 1: Bronze
-    register_temp_view(get_customer_sql, VW_CUSTOMERS)
-    register_temp_view(get_orders_sql, VW_ORDERS)
+# === 主流程 ===
 
-    # Step 2: Silver
-    register_temp_view(get_enriched_order_data_sql, VW_CUSTOMER_ORDERS)
+def run_etl(spark: SparkSession):
+    # Step 1: Bronze Layer
+    load_customers(spark)
+    load_orders(spark)
 
-    # Step 3: Gold
-    register_temp_view(get_customer_summary_sql, VW_CUSTOMER_SUMMARY)
+    # Step 2: Silver Layer
+    transform_customer_orders(spark)
 
-    # Step 4: 最終輸出
-    df = spark.sql("SELECT * FROM vw_customer_summary")
-    print("✅ 清洗後的客戶訂單彙總")
+    # Step 3: Gold Layer
+    summarize_customers(spark)
+
+    # Step 4: Output
+    df = spark.sql(f"SELECT * FROM {VW_CUSTOMER_SUMMARY}")
+    print("\n✅ 客戶訂單彙總結果：")
     df.show()
 
-    # Step 5: 清理暫存 View
-    clear_temp_view()
+    # Step 5: 清除暫存視圖
+    drop_temp_views(spark)
