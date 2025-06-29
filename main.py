@@ -17,8 +17,9 @@ def main():
 
     spark = configure_spark_with_delta_pip(builder).getOrCreate()
 
-    service.run_etl2(spark)
-    # service.easy_run(spark)
+    service.run_all(spark)
+    service.run_steps(spark)
+    service.run_sql(spark)
 
     spark.stop()
 

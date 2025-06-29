@@ -1,3 +1,12 @@
+-- [STEP: DROP_TEMP_VIEWS]
+DROP VIEW IF EXISTS vw_customer_summary;
+-- [STEP: DROP_TEMP_VIEWS]
+DROP VIEW IF EXISTS vw_customer_orders;
+-- [STEP: DROP_TEMP_VIEWS]
+DROP VIEW IF EXISTS vw_orders;
+-- [STEP: DROP_TEMP_VIEWS]
+DROP VIEW IF EXISTS vw_customers;
+
 -- [STEP: LOAD_CUSTOMERS]
 -- {% if with_view %}
 CREATE OR REPLACE TEMP VIEW vw_customers AS
