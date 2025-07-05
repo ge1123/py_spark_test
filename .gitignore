@@ -5,6 +5,7 @@ __pycache__/
 
 # VS Code settings
 .vscode/
+.idea
 
 # Spark temporary files
 ivy-cache/
