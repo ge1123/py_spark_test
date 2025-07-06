@@ -31,16 +31,13 @@ def download_csv(spark: SparkSession):
     validate_against_delta_schema(pdf, table_name, spark)
 
     df = spark.createDataFrame(pdf)
-    
-    temp_view = f"tmp_{uuid.uuid4().hex}"
-    df.createOrReplaceTempView(temp_view)
 
-    column_list = ", ".join(df.columns)
+    df.createOrReplaceTempView(f"tmp_{uuid.uuid4().hex}")
 
-    spark.sql(f"""
-              INSERT INTO {table_name} ({column_list})
-              SELECT {column_list}
-              FROM {temp_view}
-              """)
+    condition = None
+    df_selected = df.select(df.columns)
+    if condition:
+        df_selected = df_selected.filter(condition)
+    df_selected.write.format("delta").mode("append").saveAsTable(table_name)
 
     spark.sql(f"""select * from {table_name} """).show()
