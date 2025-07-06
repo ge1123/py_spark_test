@@ -1,29 +1,8 @@
 from pyspark.sql import SparkSession
 from delta.pip_utils import configure_spark_with_delta_pip
-import os
 
-
-def create_delta_table_only(
-    spark,
-    db: str,
-    schema: str,
-    table: str,
-    data: list[tuple],
-    columns: list[str],
-    base_path: str = "/tmp/delta",
-):
-    """
-    只建立 Delta table 檔案結構，不註冊 TempView。
-    """
-    full_path = os.path.join(base_path, db, schema, table)
-    os.makedirs(full_path, exist_ok=True)
-
-    df = spark.createDataFrame(data, columns)
-    df.write.format("delta").option("overwriteSchema", "true").mode("overwrite").save(
-        full_path
-    )
-
-    print(f"✅ Delta table created at: {full_path}")
+from init_data.create_table import create_delta_table_only
+from init_data.register_table import register_delta_table
 
 
 def init_mock_delta_data(spark):
@@ -73,13 +52,3 @@ def init_mock_delta_data(spark):
     )
 
 
-def register_delta_table(spark, db: str, table: str, location: str):
-    spark.sql(f"CREATE DATABASE IF NOT EXISTS {db}")
-    spark.sql(
-        f"""
-        CREATE TABLE IF NOT EXISTS {db}.{table}
-        USING DELTA
-        LOCATION '{location}'
-    """
-    )
-    print(f"🔗 Registered table: {db}.{table} at {location}")
