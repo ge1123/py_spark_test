@@ -9,7 +9,7 @@ def main():
 
     spark = get_spark_session("FullETLTest")
 
-    service.run_all(spark)
+    service.download_csv(spark)
 
 
     spark.stop()
