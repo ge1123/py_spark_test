@@ -18,3 +18,7 @@ data/
 # OS files
 .DS_Store
 Thumbs.db
+
+metastore_db/
+
+derby.log

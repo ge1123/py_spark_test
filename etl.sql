@@ -46,4 +46,4 @@ GROUP BY customer_id, name;
 
 -- [STEP: INSERT_INTO]
 -- 新增資料
-INSERT INTO customers (id, name) VALUES (1, 'Alice');
+INSERT INTO customers (id, name, city) VALUES (1, 'Alice', 'Taipei');
